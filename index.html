@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Pelaporan IT Support</title>
+    <!-- Bagian CSS untuk mempercantik tampilan antarmuka -->
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; }
+        .container { max-width: 800px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        h2 { text-align: center; color: #333; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; }
+        input[type="text"], textarea { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        button { background-color: #e6005c; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; width: 100%; font-weight: bold; }
+        button:hover { background-color: #c4004e; }
+        table { width: 100%; border-collapse: collapse; margin-top: 30px; }
+        th, td { padding: 10px; border: 1px solid #ddd; text-align: left; }
+        th { background-color: #f2f2f2; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Lapor Kendala IT</h2>
+    
+    <!-- Form untuk mengirim data (Front-End) -->
+    <form id="formTiket">
+        <div class="form-group">
+            <label for="nama">Nama Pelapor:</label>
+            <input type="text" id="nama" required placeholder="Masukkan nama Anda">
+        </div>
+        <div class="form-group">
+            <label for="kendala">Deskripsi Kendala:</label>
+            <textarea id="kendala" rows="4" required placeholder="Jelaskan masalah yang dialami (misal: Internet putus, PC mati)"></textarea>
+        </div>
+        <button type="submit">Kirim Laporan</button>
+    </form>
+
+    <!-- Tabel Dashboard untuk menampilkan data dari database -->
+    <h2>Daftar Tiket Kendala</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nama Pelapor</th>
+                <th>Kendala</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody id="tabelData">
+            <!-- Data dari Back-End akan dimuat di sini oleh JavaScript -->
+        </tbody>
+    </table>
+</div>
+
+<!-- Bagian JavaScript untuk Logika Integrasi API -->
+<script>
+    // Konstanta URL dari Back-End Python Anda
+    const API_URL = 'http://127.0.0.1:5000/api/tickets';
+
+    // 1. Fungsi Integrasi API (GET) - Mengambil data dari Back-End
+    async function loadTiket() {
+        try {
+            const response = await fetch(API_URL);
+            const data = await response.json();
+            
+            const tbody = document.getElementById('tabelData');
+            tbody.innerHTML = ''; // Kosongkan tabel sebelum diisi
+
+            // Looping data dan masukkan ke dalam baris tabel HTML
+            data.forEach(tiket => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${tiket.id}</td>
+                    <td>${tiket.nama_pelapor}</td>
+                    <td>${tiket.kendala}</td>
+                    <td><strong>${tiket.status}</strong></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        } catch (error) {
+            console.error("Gagal mengambil data:", error);
+        }
+    }
+
+    // 2. Fungsi Integrasi API (POST) - Mengirim data dari Form ke Back-End
+    document.getElementById('formTiket').addEventListener('submit', async function(event) {
+        event.preventDefault(); // Mencegah halaman reload saat form dikirim
+
+        const nama_pelapor = document.getElementById('nama').value;
+        const kendala = document.getElementById('kendala').value;
+
+        try {
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nama_pelapor, kendala })
+            });
+
+            if (response.ok) {
+                alert('Laporan berhasil dikirim!');
+                document.getElementById('formTiket').reset(); // Kosongkan form
+                loadTiket(); // Refresh tabel agar data baru langsung muncul
+            }
+        } catch (error) {
+            alert('Gagal mengirim laporan. Pastikan server Python berjalan.');
+            console.error("Error:", error);
+        }
+    });
+
+    // Jalankan fungsi loadTiket saat halaman pertama kali dibuka
+    window.onload = loadTiket;
+</script>
+
+</body>
+</html>
